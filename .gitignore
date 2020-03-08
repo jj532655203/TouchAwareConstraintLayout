@@ -1,0 +1,16 @@
+*.iml
+.gradle
+/local.properties
+.idea
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+app/build
+app/src/androidTest
+app/src/test
+touchAware/build
+touchAware/src/androidTest
+touchAware/src/test
+
