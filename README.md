@@ -9,15 +9,18 @@
 ###  感知大面积接触/重压事件(场景如:腕部接触或手指用力按住,适合用于判断学生准备动笔了)
 ###  提供方式给开发者自己定义翻页规则(如本项目Demo定义的4指水平滑动作为翻页)
 
-有了以上能力,界面将无需以下按钮
+###  有了以上能力,界面将无需以下按钮
 上一页和下一页btn
 手指触控与笔写触控的模式切换btn
 缩放btn
 
+###  本容器对事件分发机制没有侵入性
+不拦截子view的事件
+子view.requestDisallowInterceptTouchEvent()等操作后事件流仍然能被本容器感知
 
 
 ##  2.使用姿势
-###  A.建议将项目clone下来,研究清楚,方便根据自己的需求进行重构
+###  A.建议将项目clone下来,研究清楚,方便根据自己的需求进行补充甚至重构
 
 
 
@@ -29,10 +32,19 @@ allprojects.repositories{ maven { url "https://jitpack.io" } }
 
 
 module的gradle文件
-implementation 'com.github.jj532655203:AliOssImageLoader:1.1.2'
+implementation 'com.github.jj532655203:TouchAwareConstraintLayout:1.0.0'
 
 
-CTRL+SHIFT+N找到TouchAwareConstraintLayout.java就是了。
+CTRL+SHIFT+N找到TouchAwareConstraintLayout.java
+
+请保证容器内部有控件会消费事件,如本项目中的SamplePageView中
+setOnTouchListener(new OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                return true;
+            }
+        });
+		
 
 有问题欢迎issue,我会及时修复并更新版本
 
