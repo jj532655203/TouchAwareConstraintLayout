@@ -1,2 +1,43 @@
 # TouchAwareConstraintLayout
-能感知单指/双指/三指/四指/笔写的ConstraintLayout容器
+
+
+
+##  1.能力介绍
+
+###  感知缩放移动(场景如:学生将作业图片放大看,移动看其它内容)
+###  感知触控笔(场景如:学生落笔了)
+###  感知大面积接触/重压事件(场景如:腕部接触或手指用力按住,适合用于判断学生准备动笔了)
+###  提供方式给开发者自己定义翻页规则(如本项目Demo定义的4指水平滑动作为翻页)
+
+有了以上能力,界面将无需以下按钮
+上一页和下一页btn
+手指触控与笔写触控的模式切换btn
+缩放btn
+
+
+
+##  2.使用姿势
+###  A.建议将项目clone下来,研究清楚,方便根据自己的需求进行重构
+
+
+
+###  B.gradle方式引入
+
+项目根目录的gradle文件
+buildscript.repositories{ maven { url "https://jitpack.io" } }
+allprojects.repositories{ maven { url "https://jitpack.io" } }
+
+
+module的gradle文件
+implementation 'com.github.jj532655203:AliOssImageLoader:1.1.2'
+
+
+CTRL+SHIFT+N找到TouchAwareConstraintLayout.java就是了。
+
+有问题欢迎issue,我会及时修复并更新版本
+
+
+
+##  tips
+
+本项目涉及到的全面的事件分发机制、多点触控等知识是基础有重要的哦，建议clone研究，觉得好请star吧 :）
