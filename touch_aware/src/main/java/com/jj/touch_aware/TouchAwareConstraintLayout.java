@@ -5,8 +5,6 @@ import android.graphics.PointF;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
-import android.view.View;
-import android.view.ViewGroup;
 
 import androidx.constraintlayout.widget.ConstraintLayout;
 
@@ -26,8 +24,26 @@ import java.util.Map;
 public class TouchAwareConstraintLayout extends ConstraintLayout {
 
     private static final String TAG = "TouchAwareConstra";
-    private static final int FIRST_CHILD_VIEW_ID = 101;
     private OnTouchAwareListener mOnTouchAwareListener;
+    private float holdDownPressure = 6;
+    private float holdDownArea = 300;
+    private boolean[] consumed = new boolean[1];
+
+    public float getHoldDownPressure() {
+        return holdDownPressure;
+    }
+
+    public void setHoldDownPressure(float holdDownPressure) {
+        this.holdDownPressure = holdDownPressure;
+    }
+
+    public float getHoldDownArea() {
+        return holdDownArea;
+    }
+
+    public void setHoldDownArea(float holdDownArea) {
+        this.holdDownArea = holdDownArea;
+    }
 
     public TouchAwareConstraintLayout(Context context) {
         this(context, null);
@@ -40,77 +56,8 @@ public class TouchAwareConstraintLayout extends ConstraintLayout {
     public TouchAwareConstraintLayout(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
 
-        //容器内最底下的子view是消费事件的-->为了保证事件流会传下来
-        View view = new View(this.getContext()) {
-            @Override
-            public boolean onTouchEvent(MotionEvent event) {
-                return true;
-            }
-        };
-        view.setId(FIRST_CHILD_VIEW_ID);
-        super.addView(view);
-
     }
 
-    @Override
-    public void addView(View child, int index) {
-        if (index == 0) index = 1;
-        super.addView(child, index);
-    }
-
-    @Override
-    public void addView(View child, int index, ViewGroup.LayoutParams params) {
-        if (index == 0) index = 1;
-        super.addView(child, index, params);
-    }
-
-    @Override
-    public void removeView(View view) {
-        if (view.getId() == FIRST_CHILD_VIEW_ID) return;
-        super.removeView(view);
-    }
-
-    @Override
-    public void removeViewAt(int index) {
-        if (index == 0) return;
-        super.removeViewAt(index);
-    }
-
-    @Override
-    public void removeViews(int start, int count) {
-        if (count == 0) return;
-        if (start == 0) start = 1;
-        super.removeViews(start, count);
-    }
-
-    @Override
-    public void removeAllViews() {
-        int childCount = getChildCount();
-        if (childCount == 1) return;
-        removeViews(1, childCount);
-        super.removeAllViews();
-    }
-
-    @Override
-    public void removeViewInLayout(View view) {
-        if (view.getId() == FIRST_CHILD_VIEW_ID) return;
-        super.removeViewInLayout(view);
-    }
-
-    @Override
-    public void removeViewsInLayout(int start, int count) {
-        if (count == 0) return;
-        if (start == 0) start = 1;
-        super.removeViewsInLayout(start, count);
-    }
-
-    @Override
-    public void removeAllViewsInLayout() {
-        int childCount = getChildCount();
-        if (childCount == 1) return;
-        removeViews(1, childCount);
-        super.removeAllViewsInLayout();
-    }
 
     public void setOnTouchAwareListener(OnTouchAwareListener onTouchAwareListener) {
         mOnTouchAwareListener = onTouchAwareListener;
@@ -118,10 +65,7 @@ public class TouchAwareConstraintLayout extends ConstraintLayout {
 
 
     private boolean multiFinger = false;
-    private PointF downPoint = new PointF(0, 0);
     private PointF lastGravityCenterPoint;
-    private int lastActivePointerId = 0;
-
     Map<Integer, PointF> pointerIdLocationMap = new HashMap<>();
 
     /**
@@ -135,15 +79,35 @@ public class TouchAwareConstraintLayout extends ConstraintLayout {
             return super.dispatchTouchEvent(event);
         }
 
+        int toolType = event.getToolType(0);
+        if (toolType == MotionEvent.TOOL_TYPE_STYLUS) {
+
+            //触控笔入场,其它触控cancel
+            mOnTouchAwareListener.onActionFingerCancel();
+            mOnTouchAwareListener.onStylusTouchEvent(event);
+            return super.dispatchTouchEvent(event);
+        }
+
+
         switch (event.getActionMasked()) {
             case MotionEvent.ACTION_DOWN: {
+
+                //所有值还原
+                consumed[0] = false;
+                pointerIdLocationMap.clear();
+                multiFinger = false;
+                lastGravityCenterPoint = null;
+
                 pointerIdLocationMap.put(0, new PointF(event.getX(), event.getY()));
 
-                downPoint.set(event.getX(), event.getY());
                 mOnTouchAwareListener.onSingleFingerTouchEvent(event);
+
             }
             break;
             case MotionEvent.ACTION_POINTER_DOWN: {
+                if (consumed[0]) return super.dispatchTouchEvent(event);
+
+
                 //记录新落下的点的位置
                 int pointerIn = event.getActionIndex();
                 pointerIdLocationMap.put(event.getPointerId(pointerIn), new PointF(event.getX(pointerIn), event.getY(pointerIn)));
@@ -161,6 +125,7 @@ public class TouchAwareConstraintLayout extends ConstraintLayout {
             }
             break;
             case MotionEvent.ACTION_POINTER_UP: {
+                if (consumed[0]) return super.dispatchTouchEvent(event);
                 //不再记录该离开的点
                 int pointerIn = event.getActionIndex();
                 pointerIdLocationMap.remove(event.getPointerId(pointerIn));
@@ -176,8 +141,34 @@ public class TouchAwareConstraintLayout extends ConstraintLayout {
 
             }
             break;
+            case MotionEvent.ACTION_UP: {
+                if (consumed[0]) return super.dispatchTouchEvent(event);
+                if (!multiFinger) {
+                    mOnTouchAwareListener.onSingleFingerTouchEvent(event);
+                    break;
+                }
+            }
+            break;
             case MotionEvent.ACTION_MOVE:
+                if (consumed[0]) return super.dispatchTouchEvent(event);
                 int pointerCount = event.getPointerCount();
+
+                //holdDown场景为笔写准备场景
+                float activePressure = 0;
+                float activeArea = 0;
+                for (int i = 0; i < pointerCount; i++) {
+                    float _pressure = event.getPressure();
+                    if (activePressure < _pressure) activePressure = _pressure;
+                    float _area = event.getSize();
+                    if (activeArea < _area) activeArea = _area;
+                }
+                Log.d(TAG, "ACTION_MOVE activePressure = " + activePressure + "?activeArea=" + activeArea);
+                if (activePressure > holdDownPressure || activeArea > holdDownArea) {
+                    mOnTouchAwareListener.onActionFingerCancel();
+                    mOnTouchAwareListener.onHoldDown();
+                    break;
+                }
+
                 if (pointerCount > 4) {
                     //不处理5根以上手指触控
                     break;
@@ -206,6 +197,7 @@ public class TouchAwareConstraintLayout extends ConstraintLayout {
                     points.add(new PointF(event.getX(i), event.getY(i)));
                     pointerIds.add(event.getPointerId(i));
                 }
+                Log.d(TAG, "手指数量 =" + points.size());
                 PointF newCenterOfGravityPoint = Utils.getCenterOfGravityPoint(points);
                 Log.d(TAG, "motionEventMove getCenterOfGravityPoint 新重心gx=" + newCenterOfGravityPoint.x + "?Gy=" + newCenterOfGravityPoint.y + "?旧重心x=" + lastGravityCenterPoint.x + "?y=" + lastGravityCenterPoint.y);
 
@@ -242,24 +234,29 @@ public class TouchAwareConstraintLayout extends ConstraintLayout {
 
                 Log.d(TAG, "motionEventMove 找到偏移量最大的点 activePointerId=" + activePointerId + "?offsetX=" + offsetX + "?offsety=" + offsety);
 
-                //3.activePointerId向重心移动-->缩,反之-->放大
-//                double r = Utils.getDistanceOf2Point(lastGravityCenterPoint, activePointStart);
-//                boolean shrink = !Double.isInfinite(r) && r != 0 && Utils.IsPointInCircle(activePoint, lastGravityCenterPoint, r);
-//                Log.d(TAG, "motionEventMove 半径r=" + r );
+                //3.新权重半径/旧权重半径=scale
+                double newRAddUp = 0;
+                for (PointF point : points) {
+                    newRAddUp += Utils.getDistanceOf2Point(point, newCenterOfGravityPoint);
+                }
+                double newR = newRAddUp / points.size();
 
-                //4.上次activePointerId距离旧重心的距离,本次motionEvent中activePointerId距离本次重心的距离,2者比例即为缩放比例
-                double distanceOf2NewCenter = Utils.getDistanceOf2Point(activePoint, newCenterOfGravityPoint);
-                double distanceOf2OldCenter = Utils.getDistanceOf2Point(pointerIdLocationMap.get(activePointerId), lastGravityCenterPoint);
-                double scale = distanceOf2NewCenter / distanceOf2OldCenter;
-                Log.d(TAG, "motionEventMove scale=" + scale + "?distanceOf2OldCenter=" + distanceOf2OldCenter + "?distanceOf2NewCenter=" + distanceOf2NewCenter);
+                double oldRAddUp = 0;
+                for (PointF point : pointerIdLocationMap.values()) {
+                    oldRAddUp += Utils.getDistanceOf2Point(point, lastGravityCenterPoint);
+                }
+                double oldR = oldRAddUp / pointerIdLocationMap.values().size();
+                double scale = newR / oldR;
+                Log.d(TAG, "motionEventMove scale=" + scale + "?newR=" + newR + "?oldR=" + oldR);
 
-                //5.前后重心的距离就是移动量
+                //4.前后重心的距离就是移动量
                 double offSet = Utils.getDistanceOf2Point(lastGravityCenterPoint, newCenterOfGravityPoint);
 
                 Log.d(TAG, "motionEventMove scale=" + scale + "?offset=" + offSet);
-                if (mOnTouchAwareListener != null) {
-                    mOnTouchAwareListener.onScaleOrMultiFingerMove(scale, newCenterOfGravityPoint.x - lastGravityCenterPoint.x, newCenterOfGravityPoint.y - lastGravityCenterPoint.y);
-                }
+
+                float moveOffsetX = newCenterOfGravityPoint.x - lastGravityCenterPoint.x;
+                float moveOffsetY = newCenterOfGravityPoint.y - lastGravityCenterPoint.y;
+                mOnTouchAwareListener.onScaleOrMultiFingerMove(scale, moveOffsetX, moveOffsetY, pointerCount, consumed);
 
                 //更新重心
                 lastGravityCenterPoint = newCenterOfGravityPoint;
@@ -275,37 +272,22 @@ public class TouchAwareConstraintLayout extends ConstraintLayout {
     }
 
 
-    //判断当前触摸类型
-//        int toolType = event.getToolType(0);
-//        if (toolType == MotionEvent.TOOL_TYPE_STYLUS) {
-////            ToastUtil.show(this,"当前为触控笔");
-//        } else if (toolType == MotionEvent.TOOL_TYPE_FINGER) {
-////            ToastUtil.show(this,"当前为手指");
-//        } else if (toolType == MotionEvent.TOOL_TYPE_MOUSE) {
-////            ToastUtil.show(this,"当前为鼠标");
-//        } else if (toolType == MotionEvent.TOOL_TYPE_UNKNOWN) {
-////            ToastUtil.show(this,"当前为未知物品");
-//        }
-
-
     public interface OnTouchAwareListener {
-
-        public static final int DIRECTION_LEFT = 0;
-        public static final int DIRECTION_TOP = 1;
-        public static final int DIRECTION_RIGHT = 2;
-        public static final int DIRECTION_BOTTOM = 3;
 
         /**
          * 缩放
          *
-         * @param scale       缩放值,>1放大,<1缩小,=1未缩放(表示只移动)
-         * @param moveOffsetx x轴移动偏移量
-         * @param moveOffsety y轴移动偏移量
+         * @param scale        缩放值,>1放大,<1缩小,=1未缩放(表示只移动)
+         * @param moveOffsetx  x轴移动偏移量
+         * @param moveOffsety  y轴移动偏移量
+         * @param pointerCount 当前事件手指数
+         * @param consumed     这是一个输出参数,事件流是否被消费
          */
-        void onScaleOrMultiFingerMove(double scale, float moveOffsetx, float moveOffsety);
+        void onScaleOrMultiFingerMove(double scale, float moveOffsetx, float moveOffsety, int pointerCount, boolean[] consumed);
 
         /**
          * 单指的onTouchEvent
+         * (用法:可用于单指触屏书写)
          */
         void onSingleFingerTouchEvent(MotionEvent event);
 
@@ -316,77 +298,28 @@ public class TouchAwareConstraintLayout extends ConstraintLayout {
 
 
         /**
-         * 2指往一个方向滑动(左/上/右/下)
-         */
-        void on2FingerActionMove(MotionEvent event, int direction);
-
-
-        /**
-         * 2指往一个方向甩(左/上/右/下)
-         * 以最慢的那根手指速度为准
-         */
-        void on2FingerActionFling(MotionEvent event, int direction);
-
-
-        /**
-         * 2指事件取消(一般是由于手指数量发生变化)
-         */
-        void onActionDoubleFingerCancel();
-
-
-        /**
-         * 3指往一个方向滑动(左/上/右/下)
-         */
-        void on3FingerActionMove(MotionEvent event, int direction);
-
-
-        /**
-         * 3指往一个方向甩(左/上/右/下)
-         * 以最慢的那根手指速度为准
-         */
-        void on3FingerActionFling(MotionEvent event, int direction);
-
-        /**
-         * 3指事件取消(一般是由于手指数量发生变化)
-         */
-        void onAction3FingerCancel();
-
-
-        /**
-         * 4指往一个方向滑动(左/上/右/下)
-         */
-        void on4FingerActionMove(MotionEvent event, int direction);
-
-
-        /**
-         * 4指往一个方向甩(左/上/右/下)
-         * 以最慢的那根手指速度为准
-         */
-        void on4FingerActionFling(MotionEvent event, int direction);
-
-        /**
-         * 4指事件取消(一般是由于手指数量发生变化)
-         */
-        void onAction4FingerCancel();
-
-
-        /**
          * 手指触控事件取消(一般是由于触控笔事件发生了)
          */
         void onActionFingerCancel();
 
         /**
          * 触控笔事件
+         * (用法:笔写)
          */
         void onStylusTouchEvent(MotionEvent event);
 
+
+        /**
+         * 被腕部按住或屏幕被大力按压
+         */
+        void onHoldDown();
 
     }
 
     public static class SimpleOnTouchAwareListener implements OnTouchAwareListener {
 
         @Override
-        public void onScaleOrMultiFingerMove(double scale, float moveOffsetx, float moveOffsety) {
+        public void onScaleOrMultiFingerMove(double scale, float moveOffsetx, float moveOffsety, int pointerCount, boolean[] consumed) {
         }
 
         @Override
@@ -398,48 +331,18 @@ public class TouchAwareConstraintLayout extends ConstraintLayout {
         }
 
         @Override
-        public void on2FingerActionMove(MotionEvent event, int direction) {
-        }
-
-        @Override
-        public void on2FingerActionFling(MotionEvent event, int direction) {
-        }
-
-        @Override
-        public void onActionDoubleFingerCancel() {
-        }
-
-        @Override
-        public void on3FingerActionMove(MotionEvent event, int direction) {
-        }
-
-        @Override
-        public void on3FingerActionFling(MotionEvent event, int direction) {
-        }
-
-        @Override
-        public void onAction3FingerCancel() {
-        }
-
-        @Override
-        public void on4FingerActionMove(MotionEvent event, int direction) {
-        }
-
-        @Override
-        public void on4FingerActionFling(MotionEvent event, int direction) {
-        }
-
-        @Override
-        public void onAction4FingerCancel() {
-        }
-
-        @Override
         public void onActionFingerCancel() {
         }
 
         @Override
         public void onStylusTouchEvent(MotionEvent event) {
         }
+
+        @Override
+        public void onHoldDown() {
+        }
+
+
     }
 
 }

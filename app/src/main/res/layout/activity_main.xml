@@ -7,11 +7,10 @@
     tools:context=".MainActivity">
 
 
-    <ImageView
-        android:id="@+id/img"
+    <androidx.viewpager2.widget.ViewPager2
+        android:id="@+id/view_pager"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:scaleType="fitXY" />
+        android:layout_height="match_parent" />
 
 
 </com.jj.touch_aware.TouchAwareConstraintLayout>
