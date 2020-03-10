@@ -32,18 +32,22 @@ allprojects.repositories{ maven { url "https://jitpack.io" } }
 
 
 module的gradle文件
-implementation 'com.github.jj532655203:TouchAwareConstraintLayout:1.0.0'
+implementation 'com.github.jj532655203:TouchAwareConstraintLayout:1.0.1'
 
 
 CTRL+SHIFT+N找到TouchAwareConstraintLayout.java
 
-请保证容器内部有控件会消费事件,如本项目中的SamplePageView中
-setOnTouchListener(new OnTouchListener() {
+请保证容器内部有控件会消费事件,如本项目中的viewpager2的条目view构造函数中添加会消费事件流的view,若条目view想处理事件,再拦截即可
+View view = new View(context);
+        view.setOnTouchListener(new OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
+                Log.d(TAG, "SamplePageView onTouch");
                 return true;
             }
         });
+LayoutParams params = new LayoutParams(-1, -1);
+addView(view, params);
 		
 
 有问题欢迎issue,我会及时修复并更新版本
