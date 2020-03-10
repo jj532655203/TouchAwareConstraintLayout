@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
@@ -12,6 +13,7 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 
 public class SamplePageView extends ConstraintLayout {
 
+    private static final String TAG = "SamplePageView";
     private ImageView img;
 
     double addUpScale = 1D;
@@ -28,24 +30,24 @@ public class SamplePageView extends ConstraintLayout {
 
     public SamplePageView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-        img = new ImageView(context);
-        LayoutParams params = new LayoutParams(-1, -1);
-        addView(img, params);
-        img.setScaleType(ImageView.ScaleType.FIT_XY);
-
-    }
-
-    @Override
-    protected void onAttachedToWindow() {
-        super.onAttachedToWindow();
 
         //pageView一定要保底消费事件流
-        setOnTouchListener(new OnTouchListener() {
+        View view = new View(context);
+        view.setOnTouchListener(new OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
+                Log.d(TAG, "SamplePageView onTouch");
                 return true;
             }
         });
+        LayoutParams params = new LayoutParams(-1, -1);
+        addView(view, params);
+
+        img = new ImageView(context);
+        LayoutParams contentViewParams = new LayoutParams(-1, -1);
+        addView(img, contentViewParams);
+        img.setScaleType(ImageView.ScaleType.FIT_XY);
+
     }
 
     public void loadImg(Integer bitmapResId) {

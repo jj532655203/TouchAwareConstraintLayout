@@ -66,7 +66,7 @@ public class TouchAwareConstraintLayout extends ConstraintLayout {
 
     private boolean multiFinger = false;
     private PointF lastGravityCenterPoint;
-    Map<Integer, PointF> pointerIdLocationMap = new HashMap<>();
+    private Map<Integer, PointF> pointerIdLocationMap = new HashMap<>();
 
     /**
      * 为了保证子view申请不拦截情况下依然能处理事件流,所以重新本方法处理(而不是重写onInterceptTouchEvent)

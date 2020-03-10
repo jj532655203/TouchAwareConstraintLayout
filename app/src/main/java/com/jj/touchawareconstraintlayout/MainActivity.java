@@ -1,6 +1,7 @@
 package com.jj.touchawareconstraintlayout;
 
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.MotionEvent;
 
@@ -9,6 +10,7 @@ import androidx.viewpager2.widget.ViewPager2;
 
 import com.jj.touch_aware.TouchAwareConstraintLayout;
 import com.jj.touchawareconstraintlayout.adapter.SetHomeworkPageAdapter;
+import com.jj.touchawareconstraintlayout.utils.ViewPager2Util;
 import com.jj.touchawareconstraintlayout.view.SamplePageView;
 
 import java.util.ArrayList;
@@ -30,8 +32,12 @@ public class MainActivity extends AppCompatActivity {
             }
 
             //在此定义翻页规则
-            if (pointerCount == 4 && Math.abs(moveOffsetx) > Math.abs(moveOffsety)) {
+            if (pointerCount == 4 && Math.abs(moveOffsetx) > Math.abs(moveOffsety) && !consumed[0]) {
                 consumed[0] = true;
+                String errorMsg = ViewPager2Util.enableWithoutDownTouch(viewPager2);
+                if (!TextUtils.isEmpty(errorMsg)) {
+                    Log.e(TAG, "onScaleOrMultiFingerMove 反射获取RecyclerView失败 e=" + errorMsg);
+                }
                 if (!viewPager2.isUserInputEnabled()) viewPager2.setUserInputEnabled(true);
                 return;
             }

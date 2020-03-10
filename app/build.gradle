@@ -28,8 +28,8 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
 
     //以下2选一
-//    implementation project(':touch_aware')
-    implementation 'com.github.jj532655203:TouchAwareConstraintLayout:1.0.0'
+    implementation project(':touch_aware')
+//    implementation 'com.github.jj532655203:TouchAwareConstraintLayout:1.0.1'
 
     implementation "androidx.viewpager2:viewpager2:1.0.0"
     implementation "com.github.CymChad:BaseRecyclerViewAdapterHelper:3.0.1"
