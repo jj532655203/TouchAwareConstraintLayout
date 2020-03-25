@@ -27,7 +27,7 @@ public class TouchAwareConstraintLayout extends ConstraintLayout {
     private OnTouchAwareListener mOnTouchAwareListener;
     private float holdDownPressure = 6;
     private float holdDownArea = 300;
-    private boolean[] consumed = new boolean[1];
+    private boolean[] consumedMultiFingerEvent = new boolean[1];
 
     public float getHoldDownPressure() {
         return holdDownPressure;
@@ -93,7 +93,7 @@ public class TouchAwareConstraintLayout extends ConstraintLayout {
             case MotionEvent.ACTION_DOWN: {
 
                 //所有值还原
-                consumed[0] = false;
+                consumedMultiFingerEvent[0] = false;
                 pointerIdLocationMap.clear();
                 multiFinger = false;
                 lastGravityCenterPoint = null;
@@ -105,8 +105,7 @@ public class TouchAwareConstraintLayout extends ConstraintLayout {
             }
             break;
             case MotionEvent.ACTION_POINTER_DOWN: {
-                if (consumed[0]) return super.dispatchTouchEvent(event);
-
+                if (consumedMultiFingerEvent[0]) return super.dispatchTouchEvent(event);
 
                 //记录新落下的点的位置
                 int pointerIn = event.getActionIndex();
@@ -125,7 +124,7 @@ public class TouchAwareConstraintLayout extends ConstraintLayout {
             }
             break;
             case MotionEvent.ACTION_POINTER_UP: {
-                if (consumed[0]) return super.dispatchTouchEvent(event);
+                if (consumedMultiFingerEvent[0]) return super.dispatchTouchEvent(event);
                 //不再记录该离开的点
                 int pointerIn = event.getActionIndex();
                 pointerIdLocationMap.remove(event.getPointerId(pointerIn));
@@ -142,15 +141,20 @@ public class TouchAwareConstraintLayout extends ConstraintLayout {
             }
             break;
             case MotionEvent.ACTION_UP: {
-                if (consumed[0]) return super.dispatchTouchEvent(event);
+                mOnTouchAwareListener.onActionUp();
+                if (consumedMultiFingerEvent[0]) return super.dispatchTouchEvent(event);
                 if (!multiFinger) {
                     mOnTouchAwareListener.onSingleFingerTouchEvent(event);
-                    break;
                 }
             }
             break;
             case MotionEvent.ACTION_MOVE:
-                if (consumed[0]) return super.dispatchTouchEvent(event);
+                if (consumedMultiFingerEvent[0]) return super.dispatchTouchEvent(event);
+
+                if (!multiFinger) {
+                    mOnTouchAwareListener.onSingleFingerTouchEvent(event);
+                }
+
                 int pointerCount = event.getPointerCount();
 
                 //holdDown场景为笔写准备场景
@@ -256,7 +260,7 @@ public class TouchAwareConstraintLayout extends ConstraintLayout {
 
                 float moveOffsetX = newCenterOfGravityPoint.x - lastGravityCenterPoint.x;
                 float moveOffsetY = newCenterOfGravityPoint.y - lastGravityCenterPoint.y;
-                mOnTouchAwareListener.onScaleOrMultiFingerMove(scale, moveOffsetX, moveOffsetY, pointerCount, consumed);
+                mOnTouchAwareListener.onScaleOrMultiFingerMove(scale, moveOffsetX, moveOffsetY, pointerCount, consumedMultiFingerEvent);
 
                 //更新重心
                 lastGravityCenterPoint = newCenterOfGravityPoint;
@@ -314,6 +318,7 @@ public class TouchAwareConstraintLayout extends ConstraintLayout {
          */
         void onHoldDown();
 
+        void onActionUp();
     }
 
     public static class SimpleOnTouchAwareListener implements OnTouchAwareListener {
@@ -340,6 +345,10 @@ public class TouchAwareConstraintLayout extends ConstraintLayout {
 
         @Override
         public void onHoldDown() {
+        }
+
+        @Override
+        public void onActionUp() {
         }
 
 
