@@ -1,6 +1,12 @@
 # TouchAwareConstraintLayout
 
+apk地址:
 
+https://phone-love-piano-public-ro.oss-cn-shenzhen.aliyuncs.com/demo-apk/TouchAwareConstraintLayout_debug_0403.apk
+
+或手机扫码下载:
+
+![Image download apk qrcode](https://phone-love-piano-public-ro.oss-cn-shenzhen.aliyuncs.com/demo-apk/TouchAwareConstraintLayout_debug_0403_apk_qrcode.png)
 
 ##  1.能力介绍
 
