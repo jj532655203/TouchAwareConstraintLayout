@@ -10,7 +10,7 @@ import androidx.viewpager2.widget.ViewPager2;
 
 import com.jj.touch_aware.TouchAwareConstraintLayout;
 import com.jj.touchawareconstraintlayout.adapter.SetHomeworkPageAdapter;
-import com.jj.touchawareconstraintlayout.utils.ViewPager2Util;
+import com.jj.touch_aware.utils.ViewPager2Util;
 import com.jj.touchawareconstraintlayout.view.SamplePageView;
 
 import java.util.ArrayList;

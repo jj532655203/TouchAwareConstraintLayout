@@ -1,11 +1,11 @@
-package com.jj.touch_aware;
+package com.jj.touch_aware.utils;
 
 import android.graphics.PointF;
 import android.util.Log;
 
 import java.util.List;
 
-class Utils {
+public class Utils {
     private static final String TAG = "Utils";
 
     /**

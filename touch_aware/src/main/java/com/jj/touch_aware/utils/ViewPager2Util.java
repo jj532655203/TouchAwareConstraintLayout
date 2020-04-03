@@ -1,4 +1,4 @@
-package com.jj.touchawareconstraintlayout.utils;
+package com.jj.touch_aware.utils;
 
 import android.util.Log;
 
