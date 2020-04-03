@@ -1,6 +1,6 @@
 # TouchAwareConstraintLayout
 
-apk地址:
+apk地址:(体验:2-3指缩放移动,4指翻页)
 
 https://phone-love-piano-public-ro.oss-cn-shenzhen.aliyuncs.com/demo-apk/TouchAwareConstraintLayout_debug_0403.apk
 
